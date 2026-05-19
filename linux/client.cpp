@@ -102,7 +102,7 @@ int main() {
                 } else {
                     redraw_prompt();
                 }
-            } else if (ch == 127 || ch == 8) { // Backspace
+            } else if (ch == 127 || ch == 8) {
                 if (!input_buffer.empty()) {
                     input_buffer.pop_back();
                     redraw_prompt();
