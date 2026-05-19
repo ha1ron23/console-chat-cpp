@@ -38,7 +38,7 @@ g++ -std=c++11 -pthread client.cpp -o client
 ### Windows
 
 ```bash
-cd windows
+cd win
 g++ -std=c++11 server.cpp -o server.exe -lws2_32 -pthread
 g++ -std=c++11 client.cpp -o client.exe -lws2_32
 
