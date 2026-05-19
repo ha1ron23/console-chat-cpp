@@ -99,8 +99,4 @@ Contributing
 
 Feel free to open issues or pull requests. Possible improvements:
 
-    Add private messaging.
-
     Encrypt messages.
-
-    Save chat history.
