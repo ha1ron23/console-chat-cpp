@@ -18,7 +18,7 @@
 #define PORT 9034
 #define BUFFER_SIZE 1024
 
-std::unordered_map<std::string, int> clients;   // username -> socket
+std::unordered_map<std::string, int> clients;
 std::mutex clients_mutex;
 std::atomic<bool> running(true);
 std::ofstream logfile("chat.log", std::ios::app);
@@ -56,7 +56,6 @@ bool send_private(const std::string& target_username, const std::string& msg, in
     if (it == clients.end()) return false;
     std::string formatted = "[PM from " + sender_username + "]: " + msg + "\n";
     send_to_client(it->second, formatted);
-    // Also send confirmation to sender
     std::string confirm = "[PM to " + target_username + "]: " + msg + "\n";
     send_to_client(sender_socket, confirm);
     return true;
@@ -76,7 +75,6 @@ void remove_client(const std::string& username, int socket) {
 
 void handle_client(int client_socket) {
     char buffer[BUFFER_SIZE];
-    // Receive username
     int bytes = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
     if (bytes <= 0) {
         close(client_socket);
@@ -85,7 +83,6 @@ void handle_client(int client_socket) {
     buffer[bytes] = '\0';
     std::string username(buffer);
 
-    // Check if username already taken
     {
         std::lock_guard<std::mutex> lock(clients_mutex);
         if (clients.find(username) != clients.end()) {
@@ -101,18 +98,15 @@ void handle_client(int client_socket) {
     broadcast(welcome, client_socket);
     log_message(welcome);
 
-    // Message loop
     while (running) {
         bytes = recv(client_socket, buffer, BUFFER_SIZE - 1, 0);
         if (bytes <= 0) break;
         buffer[bytes] = '\0';
         std::string message(buffer);
 
-        // Remove trailing newline if any
         if (!message.empty() && message.back() == '\n')
             message.pop_back();
 
-        // Handle commands
         if (message.substr(0, 5) == "/msg ") {
             size_t first_space = message.find(' ', 5);
             if (first_space != std::string::npos) {
@@ -142,7 +136,6 @@ void handle_client(int client_socket) {
             break;
         }
         else {
-            // Public message
             std::string formatted = username + ": " + message + "\n";
             std::cout << formatted;
             broadcast(formatted, client_socket);
@@ -150,7 +143,6 @@ void handle_client(int client_socket) {
         }
     }
 
-    // Client disconnected
     remove_client(username, client_socket);
 }
 
@@ -221,7 +213,6 @@ int main() {
         }
     }
 
-    // Graceful shutdown
     std::cout << "Shutting down. Notifying clients..." << std::endl;
     broadcast("SERVER_SHUTDOWN\n", -1);
     sleep(1);
