@@ -57,6 +57,14 @@ g++ -std=c++11 client.cpp -o client.exe -lws2_32
 
 6. Press Ctrl+C on the server to gracefully shut down all connections
 
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `/msg <username> <message>` | Send a private message to a specific user |
+| `/users` | Show list of online users |
+| `/quit` | Leave the chat |
+
 ## Implementation Details
 
     Server:
