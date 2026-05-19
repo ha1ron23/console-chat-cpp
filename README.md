@@ -3,6 +3,9 @@
 A lightweight, multi‑client console chat application written in C++ using raw sockets.  
 The server handles multiple clients concurrently via threads, and the client uses non‑blocking I/O for smooth typing while receiving messages.
 
+# WARNING!
+### The windows version is untested, public issues if you found it
+
 ## Features
 
 - **Multi‑client support** – All connected users see each other’s messages in real time.
