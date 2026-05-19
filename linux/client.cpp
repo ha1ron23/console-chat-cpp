@@ -9,13 +9,16 @@
 #include <sys/select.h>
 #include <termios.h>
 #include <fcntl.h>
+#include <locale.h>
 
 #define PORT 9034
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 4096
 
 std::atomic<bool> running(true);
 int sock = -1;
 std::string input_buffer;
+std::string my_username;
+std::string my_role = "Member";
 
 void set_nonblocking_input(bool enable) {
     static struct termios oldt, newt;
@@ -32,12 +35,30 @@ void set_nonblocking_input(bool enable) {
 }
 
 void redraw_prompt() {
-    std::cout << "\r\033[K> " << input_buffer << std::flush;
+    std::cout << "\r\033[K[" << my_role << "] " << my_username << "> " << input_buffer << std::flush;
 }
 
 void add_message(const std::string& msg) {
     std::cout << "\r\033[K" << msg << std::flush;
     redraw_prompt();
+}
+
+std::string replace_you(const std::string& msg, const std::string& username) {
+    size_t colon = msg.find(':');
+    if (colon == std::string::npos) return msg;
+    std::string before = msg.substr(0, colon);
+    std::string after = msg.substr(colon + 1);
+    size_t bracket_open = before.find('[');
+    size_t bracket_close = before.find(']');
+    if (bracket_open == std::string::npos || bracket_close == std::string::npos) return msg;
+    std::string role_part = before.substr(bracket_open, bracket_close - bracket_open + 1);
+    std::string name_part = before.substr(bracket_close + 1);
+    name_part.erase(0, name_part.find_first_not_of(' '));
+    name_part.erase(name_part.find_last_not_of(' ') + 1);
+    if (name_part == username) {
+        return role_part + " " + name_part + " (you):" + after;
+    }
+    return msg;
 }
 
 void receive_messages() {
@@ -56,6 +77,34 @@ void receive_messages() {
             running = false;
             break;
         }
+        if (msg.substr(0, 10) == "YOUR_ROLE ") {
+            std::string rest = msg.substr(10);
+            size_t sp = rest.find(' ');
+            if (sp != std::string::npos) {
+                my_role = rest.substr(0, sp);
+                std::string cmd_list = rest.substr(sp+1);
+                std::cout << "\r\033[KYour role: " << my_role << "\n";
+                if (!cmd_list.empty())
+                    std::cout << "Commands: " << cmd_list << "\n";
+                redraw_prompt();
+            }
+            continue;
+        }
+        if (msg.substr(0, 13) == "ROLE_CHANGED ") {
+            std::string rest = msg.substr(13);
+            size_t sp = rest.find(' ');
+            if (sp != std::string::npos) {
+                my_role = rest.substr(0, sp);
+                std::string cmd_list = rest.substr(sp+1);
+                add_message("Your role changed to " + my_role + "\n");
+                if (!cmd_list.empty())
+                    add_message("Commands: " + cmd_list + "\n");
+                redraw_prompt();
+            }
+            continue;
+        }
+        if (msg.find("Commands available:") != std::string::npos) continue;
+        msg = replace_you(msg, my_username);
         add_message(msg);
     }
     close(sock);
@@ -63,9 +112,9 @@ void receive_messages() {
 }
 
 int main() {
-    std::string username;
+    setlocale(LC_ALL, "");
     std::cout << "Enter your username: ";
-    std::getline(std::cin, username);
+    std::getline(std::cin, my_username);
 
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         perror("socket");
@@ -79,10 +128,10 @@ int main() {
         perror("connect");
         return 1;
     }
-    send(sock, username.c_str(), username.size(), 0);
+    send(sock, my_username.c_str(), my_username.size(), 0);
 
     set_nonblocking_input(true);
-    std::cout << "Connected to chat. Type /quit to exit.\n" << std::flush;
+    std::cout << "Connected. Type /quit to exit.\n";
     redraw_prompt();
 
     std::thread receiver(receive_messages);
@@ -107,7 +156,7 @@ int main() {
                     input_buffer.pop_back();
                     redraw_prompt();
                 }
-            } else if (ch >= 32 && ch <= 126) {
+            } else {
                 input_buffer.push_back(ch);
                 redraw_prompt();
             }
