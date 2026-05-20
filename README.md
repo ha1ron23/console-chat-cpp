@@ -68,7 +68,7 @@ g++ -std=c++11 client.cpp -o client.exe -lws2_32
 | `/users` | Show list of online users |
 | `/quit` | Leave the chat |
 | `/kick <username>` | kicks username from server chat |
-| `mute <username> <time> [reason]` | mutes username for time with reason reason (optional), example: /mute user1 10sec test mute; times for mute are: n sec min h d w m y permanent |
+| `/mute <username> <time> [reason]` | mutes username for time with reason reason (optional), example: /mute user1 10sec test mute; times for mute are: n sec min h d w m y permanent |
 | `/ban <username> <time> [reason]` | bans username for time with reason reason (optional), example: /mute user1 10sec test mute; times for mute are: n sec min h d w m y permanent |
 | `/unban <username>` | unbans username |
 | `/unmute <username>` | unmutes username |
